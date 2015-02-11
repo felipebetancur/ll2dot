@@ -29,17 +29,22 @@ import (
 )
 
 var (
-	// flagForce specifies if existing graph directories should be overwritten by
-	// force.
+	// When flagForce is true, force overwrite existing graph directories.
 	flagForce bool
-	// flagFuncs specifies a comma separated list of functions to parse, e.g.
-	// "foo,bar"
+	// flagFuncs specifies a comma separated list of functions to parse (e.g.
+	// "foo,bar").
 	flagFuncs string
+	// When flagImage is true, generate an image representation of the CFG.
+	flagImage bool
+	// When flagQuiet is true, suppress non-error messages.
+	flagQuiet bool
 )
 
 func init() {
 	flag.BoolVar(&flagForce, "f", false, "Force overwrite existing graph directories.")
 	flag.StringVar(&flagFuncs, "funcs", "", `Comma separated list of functions to parse (e.g. "foo,bar").`)
+	flag.BoolVar(&flagImage, "img", false, "Generate an image representation of the CFG.")
+	flag.BoolVar(&flagQuiet, "q", false, "Suppress non-error messages.")
 	flag.Usage = usage
 }
 
@@ -125,6 +130,9 @@ func ll2dot(llPath string) error {
 	// Create a control flow graph for each function.
 	for _, funcName := range funcNames {
 		// Create control flow graph.
+		if !flagQuiet {
+			log.Printf("Parsing function: %q\n", funcName)
+		}
 		graph, err := createCFG(module, funcName)
 		if err != nil {
 			return errutil.Err(err)
@@ -139,10 +147,29 @@ func ll2dot(llPath string) error {
 		//    foo_graphs/baz.dot
 		dotName := funcName + ".dot"
 		dotPath := filepath.Join(dotDir, dotName)
+		if !flagQuiet {
+			log.Printf("Creating: %q\n", dotPath)
+		}
 		buf := []byte(graph.String())
 		err = ioutil.WriteFile(dotPath, buf, 0644)
 		if err != nil {
 			return errutil.Err(err)
+		}
+
+		// Generate an image representation of the control flow graph.
+		if flagImage {
+			pngName := funcName + ".png"
+			pngPath := filepath.Join(dotDir, pngName)
+			if !flagQuiet {
+				log.Printf("Creating: %q\n", pngPath)
+			}
+			cmd := exec.Command("dot", "-Tpng", "-o", pngPath, dotPath)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				return errutil.Err(err)
+			}
 		}
 	}
 
@@ -153,7 +180,9 @@ func ll2dot(llPath string) error {
 // per basic block.
 func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 	f := module.NamedFunction(funcName)
-	// TODO: Check for invalid function; nil? f.IsNil?
+	if f.IsNil() {
+		return nil, errutil.Newf("unable to locate function %q", funcName)
+	}
 	if f.IsDeclaration() {
 		return nil, errutil.Newf("unable to create CFG for function declaration %q", funcName)
 	}
@@ -170,8 +199,12 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 		if err != nil {
 			return nil, errutil.Err(err)
 		}
-		// TODO: Add "entry" to attrs if bb == f.EntryBasicBlock()?
-		graph.AddNode(funcName, bbName, nil)
+		if bb == f.EntryBasicBlock() {
+			attrs := map[string]string{"label": "entry"}
+			graph.AddNode(funcName, bbName, attrs)
+		} else {
+			graph.AddNode(funcName, bbName, nil)
+		}
 
 		// Add edges from node (i.e. target basic blocks) to the graph.
 		term := bb.LastInstruction()
@@ -206,8 +239,10 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 				if err != nil {
 					return nil, errutil.Err(err)
 				}
-				graph.AddEdge(bbName, targetTrueName, true, nil)  // TODO: Add "true" to attrs?
-				graph.AddEdge(bbName, targetFalseName, true, nil) // TODO: Add "false" to attrs?
+				attrs := map[string]string{"label": "true"}
+				graph.AddEdge(bbName, targetTrueName, true, attrs)
+				attrs = map[string]string{"label": "false"}
+				graph.AddEdge(bbName, targetFalseName, true, attrs)
 
 			default:
 				return nil, errutil.Newf("invalid number of operands (%d) for br instruction", nops)
@@ -230,7 +265,8 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 			if err != nil {
 				return nil, errutil.Err(err)
 			}
-			graph.AddEdge(bbName, targetDefaultName, true, nil) // TODO: Add "default" to attrs?
+			attrs := map[string]string{"label": "default"}
+			graph.AddEdge(bbName, targetDefaultName, true, attrs)
 
 			// Case branches.
 			for i := 3; i < nops; i += 2 {
@@ -240,7 +276,10 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 				if err != nil {
 					return nil, errutil.Err(err)
 				}
-				graph.AddEdge(bbName, targetCaseName, true, nil) // TODO: Add "case x" to attrs?
+				caseID := (i - 3) / 2
+				label := fmt.Sprintf("case %d", caseID)
+				attrs := map[string]string{"label": label}
+				graph.AddEdge(bbName, targetCaseName, true, attrs)
 			}
 
 		case llvm.Unreachable:
