@@ -4,9 +4,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 
 	"github.com/mewfork/dot"
 	"github.com/mewkiz/pkg/errutil"
@@ -37,7 +39,13 @@ func createDOT(llPath string) error {
 	if err != nil {
 		return err
 	}
-	bcPath := pathutil.TrimExt(llPath) + ".bc"
+	basePath := pathutil.TrimExt(llPath)
+	bcPath := basePath + ".bc"
+	dotDir := basePath + "_graphs"
+	err = os.Mkdir(dotDir, 0755)
+	if err != nil {
+		return err
+	}
 
 	// Parse foo.bc
 	module, err := llvm.ParseBitcodeFile(bcPath)
@@ -57,6 +65,7 @@ func createDOT(llPath string) error {
 		graph := dot.NewGraph()
 		graph.SetDir(true) // directed graph.
 		graphName := f.Name()
+		dotPath := path.Join(dotDir, graphName+".dot")
 		fmt.Println("graph name:", graphName)
 		graph.SetName(graphName)
 		bbs := f.BasicBlocks()
@@ -169,6 +178,10 @@ func createDOT(llPath string) error {
 			}
 		}
 		fmt.Println("### [ graph ] ###")
+		err = ioutil.WriteFile(dotPath, []byte(graph.String()), 0644)
+		if err != nil {
+			return err
+		}
 		fmt.Println(graph)
 		if f == module.LastFunction() {
 			break
