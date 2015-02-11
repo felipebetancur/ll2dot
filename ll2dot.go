@@ -131,6 +131,30 @@ func createDOT(llPath string) error {
 				//       <int_type> <case2>, label <case2_target>
 				//       ...
 				//    ]
+				if nops < 2 {
+					return fmt.Errorf("invalid number of parameters (%d) for switch", nops)
+				}
+
+				// Default branch.
+				targetDefault := term.Operand(1)
+				targetName, err := getBBName(targetDefault)
+				if err != nil {
+					return err
+				}
+				fmt.Println("target default:", targetName)
+				graph.AddEdge(nodeName, targetName, true, nil) // TODO: Add "default" to attrs?
+
+				// Case branches.
+				for i := 3; i < nops; i += 2 {
+					// 2-way conditional branch
+					targetCase := term.Operand(i)
+					targetCaseName, err := getBBName(targetCase)
+					if err != nil {
+						return err
+					}
+					fmt.Println("target case name:", targetCaseName)
+					graph.AddEdge(nodeName, targetCaseName, true, nil) // TODO: Add "case x" to attrs?
+				}
 				fmt.Println("switch")
 			case llvm.Unreachable:
 				// unreachable node (similar to exit node).
