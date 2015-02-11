@@ -4,56 +4,65 @@ package main
 //
 // void myfflush(void) {
 // 	fflush(stdout);
+// 	fflush(stderr);
 // }
 import "C"
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
-	"syscall"
 
+	"github.com/mewkiz/pkg/errutil"
+	"golang.org/x/sys/unix"
 	"llvm.org/llvm/bindings/go/llvm"
 )
 
 // hackDump returns the value dump as a string.
-func hackDump(v llvm.Value) string {
+func hackDump(v llvm.Value) (string, error) {
 	// HACK!
 
-	// Capture stdout and stderr.
-	stdout, err := syscall.Dup(int(os.Stdout.Fd()))
+	// Open temp file.
+	// TODO: Use an in-memory file instead of /tmp/x.
+	fd, err := unix.Open("/tmp/x", unix.O_WRONLY|unix.O_TRUNC|unix.O_CREAT, 0644)
 	if err != nil {
-		log.Fatalln("hackDump:", err)
+		return "", errutil.Err(err)
 	}
-	stderr, err := syscall.Dup(int(os.Stderr.Fd()))
+	fmt.Println("fd:", fd)
+
+	// Store original stderr.
+	stderr, err := unix.Dup(2)
 	if err != nil {
-		log.Fatalln("hackDump:", err)
+		return "", errutil.Err(err)
 	}
-	// TODO: Use a memory file instead of /tmp/x.
-	f, err := os.Create("/tmp/x")
+
+	// Capture stderr and redirect its output to the temp file.
+	err = unix.Dup2(fd, 2)
 	if err != nil {
-		log.Fatalln("hackDump:", err)
+		return "", errutil.Err(err)
 	}
-	syscall.Dup2(int(f.Fd()), 1)
-	syscall.Dup2(int(f.Fd()), 2)
+	err = unix.Close(fd)
+	if err != nil {
+		return "", errutil.Err(err)
+	}
 
 	// Dump value.
 	v.Dump()
 	C.myfflush()
 
-	err = f.Close()
+	// Restore stderr.
+	err = unix.Dup2(stderr, 2)
 	if err != nil {
-		log.Fatalln("hackDump:", err)
+		return "", errutil.Err(err)
+	}
+	err = unix.Close(stderr)
+	if err != nil {
+		return "", errutil.Err(err)
 	}
 
-	// Restore stdout and stderr.
-	syscall.Dup2(stdout, 1)
-	syscall.Dup2(stderr, 2)
-
+	// Return content of temp file.
 	buf, err := ioutil.ReadFile("/tmp/x")
 	if err != nil {
-		log.Fatalln("hackDump:", err)
+		return "", errutil.Err(err)
 	}
-
-	return string(buf)
+	return string(buf), nil
 }

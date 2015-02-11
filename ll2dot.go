@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/mewfork/dot"
+	"github.com/mewkiz/pkg/errutil"
 	"github.com/mewkiz/pkg/pathutil"
 	"github.com/mewlang/llvm/asm/lexer"
 	"github.com/mewlang/llvm/asm/token"
@@ -154,7 +155,7 @@ func createDOT(llPath string) error {
 // getBBName returns the name (or ID if unnamed) of a basic block.
 func getBBName(v llvm.Value) (string, error) {
 	if !v.IsBasicBlock() {
-		return "", fmt.Errorf("getBBName: invalid value type; expected basic block, got %v", v.Type())
+		return "", errutil.Newf("invalid value type; expected basic block, got %v", v.Type())
 	}
 
 	// Return name of named basic block.
@@ -173,15 +174,18 @@ func getBBName(v llvm.Value) (string, error) {
 	// Each basic block is expected to have a label, which requires the
 	// unnamed.patch to be applied to the llvm.org/llvm/bindings/go/llvm code
 	// base.
-	s := hackDump(v)
+	s, err := hackDump(v)
+	if err != nil {
+		return "", errutil.Err(err)
+	}
 	fmt.Println("s:", s)
 	tokens := lexer.ParseString(s)
 	if len(tokens) < 1 {
-		return "", fmt.Errorf("getBBName: unable to locate basic block name in %q", s)
+		return "", errutil.Newf("unable to locate basic block name in %q", s)
 	}
 	tok := tokens[0]
 	if tok.Kind != token.Label {
-		return "", fmt.Errorf("getBBName: invalid token; expected %v, got %v", token.Label, tok.Kind)
+		return "", errutil.Newf("invalid token; expected %v, got %v", token.Label, tok.Kind)
 	}
 	return tok.Val, nil
 }
