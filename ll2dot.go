@@ -55,6 +55,7 @@ func createDOT(llPath string) error {
 			continue
 		}
 		graph := dot.NewGraph()
+		graph.SetDir(true) // directed graph.
 		graphName := f.Name()
 		fmt.Println("graph name:", graphName)
 		graph.SetName(graphName)
