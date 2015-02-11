@@ -1,4 +1,13 @@
-// ll2dot is a tool which converts LLVM IR assembly files to GraphViz DOT files.
+// ll2dot is a tool which creates control flow graphs of LLVM IR assembly files
+// (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each
+// representing the control flow graph of a function using one node per basic
+// block.
+//
+// For a source file "foo.ll" containing the functions "bar" and "baz" the
+// following DOT files will be created:
+//
+//    foo_graphs/bar.dot
+//    foo_graphs/baz.dot
 package main
 
 import (
@@ -8,7 +17,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/mewfork/dot"
 	"github.com/mewkiz/pkg/errutil"
@@ -18,176 +28,235 @@ import (
 	"llvm.org/llvm/bindings/go/llvm"
 )
 
+var (
+	// flagForce specifies if existing graph directories should be overwritten by
+	// force.
+	flagForce bool
+	// flagFuncs specifies a comma separated list of functions to parse, e.g.
+	// "foo,bar"
+	flagFuncs string
+)
+
+func init() {
+	flag.BoolVar(&flagForce, "f", false, "Force overwrite existing graph directories.")
+	flag.StringVar(&flagFuncs, "funcs", "", `Comma separated list of functions to parse (e.g. "foo,bar").`)
+	flag.Usage = usage
+}
+
+const use = `
+Usage: ll2dot [OPTION]... FILE...
+Create control flow graphs of LLVM IR assembly files (e.g. *.ll -> *.dot).
+
+Flags:`
+
+func usage() {
+	fmt.Fprintln(os.Stderr, use[1:])
+	flag.PrintDefaults()
+}
+
 func main() {
 	flag.Parse()
+	if flag.NArg() < 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
 	for _, llPath := range flag.Args() {
-		err := createDOT(llPath)
+		err := ll2dot(llPath)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
 }
 
-// createDOT parses the provided LLVM IR assembly file and converts each of its
-// defined functions to directed graphs with one node per basic block.
-func createDOT(llPath string) error {
+// ll2dot parses the provided LLVM IR assembly file and creates a control flow
+// graph for each of its defined functions using one node per basic block.
+func ll2dot(llPath string) error {
+	basePath := pathutil.TrimExt(llPath)
+
 	// foo.ll -> foo.bc
 	cmd := exec.Command("llvm-as", llPath)
-	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return errutil.Err(err)
 	}
-	basePath := pathutil.TrimExt(llPath)
 	bcPath := basePath + ".bc"
+
+	// Create output directory for the control flow graphs.
 	dotDir := basePath + "_graphs"
+	if flagForce {
+		// Force remove existing graph directory.
+		err = os.RemoveAll(dotDir)
+		if err != nil {
+			return errutil.Err(err)
+		}
+	}
 	err = os.Mkdir(dotDir, 0755)
 	if err != nil {
-		return err
+		return errutil.Err(err)
 	}
 
 	// Parse foo.bc
 	module, err := llvm.ParseBitcodeFile(bcPath)
 	if err != nil {
-		return err
+		return errutil.Err(err)
 	}
 	defer module.Dispose()
 
-	// Create one graph for each function using basic blocks as nodes.
-	fmt.Println("=== [ module ] ===")
-	for f := module.FirstFunction(); !f.IsNil(); f = llvm.NextFunction(f) {
-		fmt.Println("--- [ function ] ---")
-		f.Dump()
-		if f.IsDeclaration() {
-			continue
-		}
-		graph := dot.NewGraph()
-		graph.SetDir(true) // directed graph.
-		graphName := f.Name()
-		dotPath := path.Join(dotDir, graphName+".dot")
-		fmt.Println("graph name:", graphName)
-		graph.SetName(graphName)
-		bbs := f.BasicBlocks()
-		for _, bb := range bbs {
-			// TODO: Mark the entry basic block.
-			//    if bb == f.EntryBasicBlock()
-
-			// Add node (i.e. basic block) to graph.
-			fmt.Println("___ [ basic block ] ___")
-			nodeName, err := getBBName(bb.AsValue())
-			if err != nil {
-				return err
+	// Get function names.
+	var funcNames []string
+	if len(flagFuncs) > 0 {
+		// Get function names from command line flag:
+		//
+		//    -funcs="foo,bar"
+		funcNames = strings.Split(flagFuncs, ",")
+	} else {
+		// Get all function names.
+		for f := module.FirstFunction(); !f.IsNil(); f = llvm.NextFunction(f) {
+			if f.IsDeclaration() {
+				// Ignore function declarations (e.g. functions without bodies).
+				continue
 			}
-			fmt.Println("node name:", nodeName)
-			graph.AddNode(graphName, nodeName, nil)
-
-			// Add edges from node (i.e. target basic blocks) to graph.
-			term := bb.LastInstruction()
-			fmt.Println("~~~ [ terminator instruction ] ~~~")
-			term.Dump()
-			nops := term.OperandsCount()
-			for i := 0; i < nops; i++ {
-				op := term.Operand(i)
-				fmt.Println("### [ operand ] ###")
-				op.Dump()
-			}
-			opcode := term.InstructionOpcode()
-			switch opcode {
-			case llvm.Ret:
-				// exit node.
-				//    ret <type> <value>
-				//    ret <void>
-				fmt.Println("ret")
-			case llvm.Br:
-				// unconditional branch.
-				//    br label <target>
-				// 2-way conditional branch.
-				//    br i1 <cond>, label <target_true>, label <target_false>
-				switch nops {
-				case 1:
-					// unconditional branch
-					target := term.Operand(0)
-					targetName, err := getBBName(target)
-					if err != nil {
-						return err
-					}
-					fmt.Println("target name:", targetName)
-					graph.AddEdge(nodeName, targetName, true, nil)
-				case 3:
-					// 2-way conditional branch
-					targetTrue, targetFalse := term.Operand(1), term.Operand(2)
-					targetTrueName, err := getBBName(targetTrue)
-					if err != nil {
-						return err
-					}
-					targetFalseName, err := getBBName(targetFalse)
-					if err != nil {
-						return err
-					}
-					fmt.Println("target true name:", targetTrueName)
-					fmt.Println("target false name:", targetFalseName)
-					graph.AddEdge(nodeName, targetTrueName, true, nil)  // TODO: Add "true" to attrs?
-					graph.AddEdge(nodeName, targetFalseName, true, nil) // TODO: Add "false" to attrs?
-				default:
-					return fmt.Errorf("invalid number of parameters (%d) for br", nops)
-				}
-				fmt.Println("br")
-			case llvm.Switch:
-				// n-way conditional branch.
-				//    switch <int_type> <value>, label <default_target> [
-				//       <int_type> <case1>, label <case1_target>
-				//       <int_type> <case2>, label <case2_target>
-				//       ...
-				//    ]
-				if nops < 2 {
-					return fmt.Errorf("invalid number of parameters (%d) for switch", nops)
-				}
-
-				// Default branch.
-				targetDefault := term.Operand(1)
-				targetName, err := getBBName(targetDefault)
-				if err != nil {
-					return err
-				}
-				fmt.Println("target default:", targetName)
-				graph.AddEdge(nodeName, targetName, true, nil) // TODO: Add "default" to attrs?
-
-				// Case branches.
-				for i := 3; i < nops; i += 2 {
-					// 2-way conditional branch
-					targetCase := term.Operand(i)
-					targetCaseName, err := getBBName(targetCase)
-					if err != nil {
-						return err
-					}
-					fmt.Println("target case name:", targetCaseName)
-					graph.AddEdge(nodeName, targetCaseName, true, nil) // TODO: Add "case x" to attrs?
-				}
-				fmt.Println("switch")
-			case llvm.Unreachable:
-				// unreachable node (similar to exit node).
-				//    unreachable
-				fmt.Println("unreachable")
-			default:
-				// Not yet supported:
-				//    - indirectbr
-				//    - invoke
-				//    - resume
-				panic(fmt.Sprintf("not yet implemented; support for terminator %v", opcode))
-			}
-		}
-		fmt.Println("### [ graph ] ###")
-		err = ioutil.WriteFile(dotPath, []byte(graph.String()), 0644)
-		if err != nil {
-			return err
-		}
-		fmt.Println(graph)
-		if f == module.LastFunction() {
-			break
+			funcNames = append(funcNames, f.Name())
 		}
 	}
+
+	// Create a control flow graph for each function.
+	for _, funcName := range funcNames {
+		// Create control flow graph.
+		graph, err := createCFG(module, funcName)
+		if err != nil {
+			return errutil.Err(err)
+		}
+
+		// Store the control flow graph.
+		//
+		// For a source file "foo.ll" containing the functions "bar" and "baz" the
+		// following DOT files will be created:
+		//
+		//    foo_graphs/bar.dot
+		//    foo_graphs/baz.dot
+		dotName := funcName + ".dot"
+		dotPath := filepath.Join(dotDir, dotName)
+		buf := []byte(graph.String())
+		err = ioutil.WriteFile(dotPath, buf, 0644)
+		if err != nil {
+			return errutil.Err(err)
+		}
+	}
+
 	return nil
+}
+
+// createCFG creates a control flow graph for the given function using one node
+// per basic block.
+func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
+	f := module.NamedFunction(funcName)
+	// TODO: Check for invalid function; nil? f.IsNil?
+	if f.IsDeclaration() {
+		return nil, errutil.Newf("unable to create CFG for function declaration %q", funcName)
+	}
+
+	// Create a new directed graph.
+	graph := dot.NewGraph()
+	graph.SetDir(true)
+	graph.SetName(funcName)
+
+	// Populate the graph with one node per basic block.
+	for _, bb := range f.BasicBlocks() {
+		// Add node (i.e. basic block) to the graph.
+		bbName, err := getBBName(bb.AsValue())
+		if err != nil {
+			return nil, errutil.Err(err)
+		}
+		// TODO: Add "entry" to attrs if bb == f.EntryBasicBlock()?
+		graph.AddNode(funcName, bbName, nil)
+
+		// Add edges from node (i.e. target basic blocks) to the graph.
+		term := bb.LastInstruction()
+		nops := term.OperandsCount()
+		switch opcode := term.InstructionOpcode(); opcode {
+		case llvm.Ret:
+			// exit node.
+			//    ret <type> <value>
+			//    ret void
+
+		case llvm.Br:
+			switch nops {
+			case 1:
+				// unconditional branch.
+				//    br label <target>
+				target := term.Operand(0)
+				targetName, err := getBBName(target)
+				if err != nil {
+					return nil, errutil.Err(err)
+				}
+				graph.AddEdge(bbName, targetName, true, nil)
+
+			case 3:
+				// 2-way conditional branch.
+				//    br i1 <cond>, label <target_true>, label <target_false>
+				targetTrue, targetFalse := term.Operand(1), term.Operand(2)
+				targetTrueName, err := getBBName(targetTrue)
+				if err != nil {
+					return nil, errutil.Err(err)
+				}
+				targetFalseName, err := getBBName(targetFalse)
+				if err != nil {
+					return nil, errutil.Err(err)
+				}
+				graph.AddEdge(bbName, targetTrueName, true, nil)  // TODO: Add "true" to attrs?
+				graph.AddEdge(bbName, targetFalseName, true, nil) // TODO: Add "false" to attrs?
+
+			default:
+				return nil, errutil.Newf("invalid number of operands (%d) for br instruction", nops)
+			}
+
+		case llvm.Switch:
+			// n-way conditional branch.
+			//    switch <type> <value>, label <default_target> [
+			//       <type> <case1>, label <case1_target>
+			//       <type> <case2>, label <case2_target>
+			//       ...
+			//    ]
+			if nops < 2 {
+				return nil, errutil.Newf("invalid number of operands (%d) for switch instruction", nops)
+			}
+
+			// Default branch.
+			targetDefault := term.Operand(1)
+			targetDefaultName, err := getBBName(targetDefault)
+			if err != nil {
+				return nil, errutil.Err(err)
+			}
+			graph.AddEdge(bbName, targetDefaultName, true, nil) // TODO: Add "default" to attrs?
+
+			// Case branches.
+			for i := 3; i < nops; i += 2 {
+				// Case branch.
+				targetCase := term.Operand(i)
+				targetCaseName, err := getBBName(targetCase)
+				if err != nil {
+					return nil, errutil.Err(err)
+				}
+				graph.AddEdge(bbName, targetCaseName, true, nil) // TODO: Add "case x" to attrs?
+			}
+
+		case llvm.Unreachable:
+			// unreachable node.
+			//    unreachable
+
+		default:
+			// TODO: Implement support for:
+			//    - indirectbr
+			//    - invoke
+			//    - resume
+			panic(fmt.Sprintf("not yet implemented; support for terminator %v", opcode))
+		}
+	}
+
+	return graph, nil
 }
 
 // getBBName returns the name (or ID if unnamed) of a basic block.
@@ -196,30 +265,28 @@ func getBBName(v llvm.Value) (string, error) {
 		return "", errutil.Newf("invalid value type; expected basic block, got %v", v.Type())
 	}
 
-	// Return name of named basic block.
+	// Locate the name of a named basic block.
 	if name := v.Name(); len(name) > 0 {
 		return name, nil
 	}
 
-	// Return ID of unnamed basic block.
-
-	// Search for the basic block label in the value dump.
+	// Locate the ID of an unnamed basic block by parsing the value dump in
+	// search for its basic block label.
 	//
 	// Example value dump:
 	//    0:
 	//      br i1 true, label %1, label %2
 	//
 	// Each basic block is expected to have a label, which requires the
-	// unnamed.patch to be applied to the llvm.org/llvm/bindings/go/llvm code
+	// "unnamed.patch" to be applied to the llvm.org/llvm/bindings/go/llvm code
 	// base.
 	s, err := hackDump(v)
 	if err != nil {
 		return "", errutil.Err(err)
 	}
-	fmt.Println("s:", s)
 	tokens := lexer.ParseString(s)
 	if len(tokens) < 1 {
-		return "", errutil.Newf("unable to locate basic block name in %q", s)
+		return "", errutil.Newf("unable to locate basic block label in %q", s)
 	}
 	tok := tokens[0]
 	if tok.Kind != token.Label {
