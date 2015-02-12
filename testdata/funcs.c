@@ -1,3 +1,15 @@
+int foo(int a, int b) {
+	int x;
+
+	if (b < 3) {
+		b <<= 10;
+	}
+	for (x = 0; a < b; a++) {
+		x += a;
+	}
+	return x;
+}
+
 int bar(int x) {
 	while (x < 1000) {
 		x *= 2;

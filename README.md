@@ -30,17 +30,25 @@ go get github.com/mewrev/ll2dot
 
 ### funcs
 
+```shell
+ll2dot -f -img -funcs="foo,bar" testdata/funcs.ll
+```
+
 Input:
 * [funcs.ll](testdata/funcs.ll)
 
 Output:
+* [foo.dot](testdata/funcs_graphs/foo.dot)
 * [bar.dot](testdata/funcs_graphs/bar.dot)
-* [main.dot](testdata/funcs_graphs/main.dot)
 
+![CFG funcs the foo function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/foo.png)
 ![CFG funcs the bar function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/bar.png)
-![CFG funcs the main function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/main.png)
 
 ### switch
+
+```shell
+ll2dot -f -img testdata/funcs.ll
+```
 
 Input:
 * [switch.ll](testdata/switch.ll)

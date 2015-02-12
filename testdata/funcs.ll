@@ -3,6 +3,37 @@ target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: nounwind uwtable
+define i32 @foo(i32 %a, i32 %b) #0 {
+  %1 = icmp slt i32 %b, 3
+  br i1 %1, label %2, label %4
+
+; <label>:2                                       ; preds = %0
+  %3 = shl i32 %b, 10
+  br label %4
+
+; <label>:4                                       ; preds = %2, %0
+  %.01 = phi i32 [ %3, %2 ], [ %b, %0 ]
+  br label %5
+
+; <label>:5                                       ; preds = %9, %4
+  %x.0 = phi i32 [ 0, %4 ], [ %8, %9 ]
+  %.0 = phi i32 [ %a, %4 ], [ %10, %9 ]
+  %6 = icmp slt i32 %.0, %.01
+  br i1 %6, label %7, label %11
+
+; <label>:7                                       ; preds = %5
+  %8 = add nsw i32 %x.0, %.0
+  br label %9
+
+; <label>:9                                       ; preds = %7
+  %10 = add nsw i32 %.0, 1
+  br label %5
+
+; <label>:11                                      ; preds = %5
+  ret i32 %x.0
+}
+
+; Function Attrs: nounwind uwtable
 define i32 @bar(i32 %x) #0 {
   br label %1
 
