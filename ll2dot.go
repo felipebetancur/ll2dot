@@ -6,8 +6,8 @@
 // For a source file "foo.ll" containing the functions "bar" and "baz" the
 // following DOT files will be created:
 //
-//    * "foo_graphs/bar.dot"
-//    * "foo_graphs/baz.dot"
+//    * foo_graphs/bar.dot
+//    * foo_graphs/baz.dot
 package main
 
 //go:generate mango -plain ll2dot.go
