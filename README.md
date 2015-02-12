@@ -17,15 +17,57 @@ go get github.com/mewrev/ll2dot
 
 ## Examples
 
+### for
+
+Input:
+* [for.ll](testdata/for.ll)
+
+Output:
+* [main.dot](testdata/for_graphs/main.dot)
+
+![CFG for the main function of for.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/for_graphs/main.png)
+
+### funcs
+
+Input:
+* [funcs.ll](testdata/funcs.ll)
+
+Output:
+* [bar.dot](testdata/funcs_graphs/bar.dot)
+* [main.dot](testdata/funcs_graphs/main.dot)
+
+![CFG funcs the bar function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/bar.png)
+![CFG funcs the main function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/main.png)
+
+### if-else
+
+Input:
+* [if-else.ll](testdata/if-else.ll)
+
+Output:
+* [main.dot](testdata/if-else_graphs/main.dot)
+
+![CFG if-else the main function of if-else.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/if-else_graphs/main.png)
+
 ### if
 
 Input:
 * [if.ll](testdata/if.ll)
 
 Output:
-* [main.dot](testdata/)
+* [main.dot](testdata/if_graphs/main.dot)
 
 ![CFG for the main function of if.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/if_graphs/main.png)
+
+### switch
+
+Input:
+* [switch.ll](testdata/switch.ll)
+
+Output:
+* [main.dot](testdata/switch_graphs/main.dot)
+
+![CFG switch the main function of switch.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/switch_graphs/main.png)
 
 ## Dependencies
 
