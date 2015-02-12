@@ -10,6 +10,8 @@
 //    foo_graphs/baz.dot
 package main
 
+//go:generate mango -plain ll2dot.go
+
 import (
 	"flag"
 	"fmt"
@@ -76,17 +78,29 @@ func main() {
 // ll2dot parses the provided LLVM IR assembly file and creates a control flow
 // graph for each of its defined functions using one node per basic block.
 func ll2dot(llPath string) error {
+	// File name and file path without extension.
+	baseName := pathutil.FileName(llPath)
 	basePath := pathutil.TrimExt(llPath)
 
-	// foo.ll -> foo.bc
-	cmd := exec.Command("llvm-as", llPath)
+	// Create temporary foo.bc file, e.g.
+	//
+	//    foo.ll -> foo.bc
+	bcPath := fmt.Sprintf("/tmp/%s.bc", baseName)
+	cmd := exec.Command("llvm-as", "-o", bcPath, llPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		return errutil.Err(err)
 	}
-	bcPath := basePath + ".bc"
+
+	// Remove temporary foo.bc file.
+	defer func() {
+		err = os.Remove(bcPath)
+		if err != nil {
+			log.Fatalln(errutil.Err(err))
+		}
+	}()
 
 	// Create output directory for the control flow graphs.
 	dotDir := basePath + "_graphs"
