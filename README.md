@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/mewrev/ll2dot?status.svg)](https://godoc.org/github.com/mewrev/ll2dot)
 
-ll2dot is a tool which creates control flow graphs of LLVM IR assembly files (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each representing the control flow graph of a function using one node per basic block.
+`ll2dot` is a tool which creates control flow graphs of LLVM IR assembly files (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each representing the control flow graph of a function using one node per basic block.
 
 For a source file "foo.ll" containing the functions "bar" and "baz" the following DOT files will be created:
 
@@ -24,7 +24,6 @@ go get github.com/mewrev/ll2dot
       -funcs="":  Comma separated list of functions to parse (e.g. "foo,bar").
       -img=false: Generate an image representation of the CFG.
       -q=false:   Suppress non-error messages.
-
 
 ## Examples
 
