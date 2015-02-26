@@ -22,9 +22,47 @@ import (
 	"io/ioutil"
 
 	"github.com/mewkiz/pkg/errutil"
+	"github.com/mewlang/llvm/asm/lexer"
+	"github.com/mewlang/llvm/asm/token"
 	"golang.org/x/sys/unix"
 	"llvm.org/llvm/bindings/go/llvm"
 )
+
+// getBBName returns the name (or ID if unnamed) of a basic block.
+func getBBName(v llvm.Value) (string, error) {
+	if !v.IsBasicBlock() {
+		return "", errutil.Newf("invalid value type; expected basic block, got %v", v.Type())
+	}
+
+	// Locate the name of a named basic block.
+	if name := v.Name(); len(name) > 0 {
+		return name, nil
+	}
+
+	// Locate the ID of an unnamed basic block by parsing the value dump in
+	// search for its basic block label.
+	//
+	// Example value dump:
+	//    0:
+	//      br i1 true, label %1, label %2
+	//
+	// Each basic block is expected to have a label, which requires the
+	// "unnamed.patch" to be applied to the llvm.org/llvm/bindings/go/llvm code
+	// base.
+	s, err := hackDump(v)
+	if err != nil {
+		return "", errutil.Err(err)
+	}
+	tokens := lexer.ParseString(s)
+	if len(tokens) < 1 {
+		return "", errutil.Newf("unable to locate basic block label in %q", s)
+	}
+	tok := tokens[0]
+	if tok.Kind != token.Label {
+		return "", errutil.Newf("invalid token; expected %v, got %v", token.Label, tok.Kind)
+	}
+	return tok.Val, nil
+}
 
 // hackDump returns the value dump as a string.
 func hackDump(v llvm.Value) (string, error) {
