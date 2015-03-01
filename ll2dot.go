@@ -196,7 +196,7 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 		return nil, errutil.Newf("unable to locate function %q", funcName)
 	}
 	if f.IsDeclaration() {
-		return nil, errutil.Newf("unable to create CFG for function declaration %q", funcName)
+		return nil, errutil.Newf("unable to create CFG for %q; expected function definition, got function declaration (e.g. no body)", funcName)
 	}
 
 	// Create a new directed graph.
