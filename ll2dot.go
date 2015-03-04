@@ -1,4 +1,7 @@
+//go:generate usagen ll2dot
+//go:generate mv z_usage.go z_usage.bak
 //go:generate mango -plain ll2dot.go
+//go:generate mv z_usage.bak z_usage.go
 
 // ll2dot is a tool which creates control flow graphs of LLVM IR assembly files
 // (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each
@@ -10,17 +13,6 @@
 //
 //    * foo_graphs/bar.dot
 //    * foo_graphs/baz.dot
-//
-// Usage:
-//
-//    ll2dot [OPTION]... FILE...
-//
-// Flags:
-//
-//    -f=false:   Force overwrite existing graph directories.
-//    -funcs="":  Comma separated list of functions to parse (e.g. "foo,bar").
-//    -img=false: Generate an image representation of the CFG.
-//    -q=false:   Suppress non-error messages.
 package main
 
 import (
