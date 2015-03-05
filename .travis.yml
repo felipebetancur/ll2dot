@@ -8,9 +8,18 @@ env:
     - PATH=$HOME/gopath/bin:$PATH
 
 before_install:
+  # LLVM 3.6
+  - sudo sh -c "echo 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.6 main' >> /etc/apt/sources.list"
+  - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+  - sudo apt-get update -qq
   - sudo apt-get install -qq llvm-3.6
+
+  # Precompiled copy of llvm.org/llvm/bindings/go/llvm with the unnamed.patch [1].
+  #
+  # [1]: https://github.com/mewrev/ll2dot/blob/master/unnamed.patch
   - mkdir -p $HOME/gopath/pkg/linux_amd64/llvm.org/llvm/bindings/go
   - wget -O $HOME/gopath/pkg/linux_amd64/llvm.org/llvm/bindings/go/llvm.a https://raw.githubusercontent.com/mewbuild/travis/master/linux_amd64/llvm.org/llvm/bindings/go/llvm.a
+
   - go get golang.org/x/tools/cmd/cover
   - go get golang.org/x/tools/cmd/goimports
   - go get golang.org/x/tools/cmd/vet
