@@ -8,6 +8,8 @@ env:
     - PATH=$HOME/gopath/bin:$PATH
 
 before_install:
+  - mkdir -p $HOME/gopath/pkg/linux_amd64/llvm.org/llvm/bindings/go
+  - wget -O $HOME/gopath/pkg/linux_amd64/llvm.org/llvm/bindings/go/llvm.a https://raw.githubusercontent.com/mewbuild/travis/master/linux_amd64/llvm.org/llvm/bindings/go/llvm.a
   - go get golang.org/x/tools/cmd/cover
   - go get golang.org/x/tools/cmd/goimports
   - go get golang.org/x/tools/cmd/vet
