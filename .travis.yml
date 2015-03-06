@@ -15,17 +15,13 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y llvm-3.6-runtime libllvm3.6 llvm-3.6 llvm-3.6-dev
 
-  # Download the source code of LLVM 3.6
+  # Download and build the source code of LLVM 3.6
   - mkdir -p $HOME/gopath/src/llvm.org/
   - wget -O $HOME/gopath/src/llvm.org/llvm-3.6.0.src.tar.xz http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz
-  - tar -C $HOME/gopath/src/llvm.org/ -xvf $HOME/gopath/src/llvm.org/llvm-3.6.0.src.tar.xz
+  - tar -C $HOME/gopath/src/llvm.org/ -xf $HOME/gopath/src/llvm.org/llvm-3.6.0.src.tar.xz
   - mv $HOME/gopath/src/llvm.org/llvm-3.6.0.src $HOME/gopath/src/llvm.org/llvm
-
-  # Precompiled copy of llvm.org/llvm/bindings/go/llvm with the unnamed.patch [1].
-  #
-  # [1]: https://github.com/mewrev/ll2dot/blob/master/unnamed.patch
-  - mkdir -p $HOME/gopath/pkg/linux_amd64/llvm.org/llvm/bindings/go/
-  - wget -O $HOME/gopath/pkg/linux_amd64/llvm.org/llvm/bindings/go/llvm.a https://raw.githubusercontent.com/mewbuild/travis/master/linux_amd64/llvm.org/llvm/bindings/go/llvm.a
+  - $HOME/gopath/src/llvm.org/llvm/bindings/go/build.sh
+  - go install llvm.org/llvm/bindings/go/llvm
 
   - go get golang.org/x/tools/cmd/cover
   - go get golang.org/x/tools/cmd/goimports
