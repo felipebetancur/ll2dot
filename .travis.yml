@@ -8,13 +8,13 @@ env:
     - PATH=$HOME/gopath/bin:$PATH
 
 before_install:
-  # Install GCC 4.8
+  # Install GCC 4.7
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
-  - sudo apt-get install -qq gcc-4.8
-  - sudo apt-get install -qq g++-4.8
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
+  - sudo apt-get install -qq gcc-4.7 g++-4.7
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.7 90
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.7 90
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.7" CC="gcc-4.7"; fi
 
   # Install LLVM 3.6
   - sudo apt-add-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.6 main'
@@ -30,6 +30,8 @@ before_install:
   - mv $HOME/gopath/src/llvm.org/llvm-3.6.0.src $HOME/gopath/src/llvm.org/llvm
   - sed -i 's/2.8.8/2.8.7/' $HOME/gopath/src/llvm.org/llvm/CMakeLists.txt
   - sed -i 's/2.8.8/2.8.7/' $HOME/gopath/src/llvm.org/llvm/docs/CMake.rst
+  - wget -O $HOME/gopath/src/llvm.org/llvm/unnamed.patch https://raw.githubusercontent.com/mewrev/ll2dot/master/unnamed.patch
+  - git -C $HOME/gopath/src/llvm.org/llvm/ apply unnamed.patch
   - $HOME/gopath/src/llvm.org/llvm/bindings/go/build.sh
   - go install llvm.org/llvm/bindings/go/llvm
 
