@@ -1,8 +1,8 @@
-Index: lib/IR/AsmWriter.cpp
-===================================================================
---- lib/IR/AsmWriter.cpp	(revision 227257)
-+++ lib/IR/AsmWriter.cpp	(working copy)
-@@ -2030,13 +2030,14 @@
+diff --git a/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
+index c494d6c..1a96956 100644
+--- a/lib/IR/AsmWriter.cpp
++++ b/lib/IR/AsmWriter.cpp
+@@ -2025,13 +2025,14 @@ void AssemblyWriter::printBasicBlock(const BasicBlock *BB) {
      Out << "\n";
      PrintLLVMName(Out, BB->getName(), LabelPrefix);
      Out << ':';
