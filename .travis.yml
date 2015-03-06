@@ -20,6 +20,8 @@ before_install:
   - wget -O $HOME/gopath/src/llvm.org/llvm-3.6.0.src.tar.xz http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz
   - tar -C $HOME/gopath/src/llvm.org/ -xf $HOME/gopath/src/llvm.org/llvm-3.6.0.src.tar.xz
   - mv $HOME/gopath/src/llvm.org/llvm-3.6.0.src $HOME/gopath/src/llvm.org/llvm
+  - sed -i 's/2.8.8/2.8.7/' $HOME/gopath/src/llvm.org/llvm/CMakeLists.txt
+  - sed -i 's/2.8.8/2.8.7/' $HOME/gopath/src/llvm.org/llvm/docs/CMake.rst
   - $HOME/gopath/src/llvm.org/llvm/bindings/go/build.sh
   - go install llvm.org/llvm/bindings/go/llvm
 
