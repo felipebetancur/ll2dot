@@ -8,12 +8,17 @@ env:
     - PATH=$HOME/gopath/bin:$PATH
 
 before_install:
-  # LLVM 3.6
+  # Install LLVM 3.6
   - sudo apt-add-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.6 main'
   - sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main'
   - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo apt-get update -qq
   - sudo apt-get install -y llvm-3.6-runtime libllvm3.6 llvm-3.6 llvm-3.6-dev
+
+  # Install gcc 4.7
+  - sudo apt-add-repository -y 'deb http://ppa.launchpad.net/steven-lang/gcc-4.7/ubuntu precise main'
+  - sudo apt-get update -qq
+  - sudo apt-get install -y gcc-4.7
 
   # Download and build the source code of LLVM 3.6
   - mkdir -p $HOME/gopath/src/llvm.org/
