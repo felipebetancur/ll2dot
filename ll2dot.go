@@ -245,7 +245,13 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 			case 3:
 				// 2-way conditional branch.
 				//    br i1 <cond>, label <target_true>, label <target_false>
-				targetTrue, targetFalse := term.Operand(1), term.Operand(2)
+				// NOTE: The LLVM library has a peculiar way of ordering the operands:
+				//    term.Operand(0) refers to the 1st operand
+				//    term.Operand(1) refers to the 3rd operand
+				//    term.Operand(2) refers to the 2nd operand
+				// TODO: Make the order logical with the pure Go implementation of
+				// LLVM IR.
+				targetTrue, targetFalse := term.Operand(2), term.Operand(1)
 				targetTrueName, err := getBBName(targetTrue)
 				if err != nil {
 					return nil, errutil.Err(err)
