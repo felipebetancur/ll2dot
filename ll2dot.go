@@ -260,10 +260,10 @@ func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 				if err != nil {
 					return nil, errutil.Err(err)
 				}
-				attrs := map[string]string{"label": "true"}
-				graph.AddEdge(bbName, targetTrueName, true, attrs)
-				attrs = map[string]string{"label": "false"}
+				attrs := map[string]string{"label": "false"}
 				graph.AddEdge(bbName, targetFalseName, true, attrs)
+				attrs = map[string]string{"label": "true"}
+				graph.AddEdge(bbName, targetTrueName, true, attrs)
 
 			default:
 				return nil, errutil.Newf("invalid number of operands (%d) for br instruction", nops)
