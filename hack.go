@@ -21,9 +21,9 @@ import "C"
 import (
 	"io/ioutil"
 
+	"github.com/llir/llvm/asm/lexer"
+	"github.com/llir/llvm/asm/token"
 	"github.com/mewkiz/pkg/errutil"
-	"github.com/mewlang/llvm/asm/lexer"
-	"github.com/mewlang/llvm/asm/token"
 	"golang.org/x/sys/unix"
 	"llvm.org/llvm/bindings/go/llvm"
 )

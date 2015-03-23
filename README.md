@@ -1,6 +1,6 @@
 # ll2dot
 
-[![GoDoc](https://godoc.org/github.com/mewrev/ll2dot?status.svg)](https://godoc.org/github.com/mewrev/ll2dot)
+[![GoDoc](https://godoc.org/github.com/decomp/ll2dot?status.svg)](https://godoc.org/github.com/decomp/ll2dot)
 
 `ll2dot` is a tool which creates control flow graphs of LLVM IR assembly files (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each representing the control flow graph of a function using one node per basic block.
 
@@ -12,7 +12,7 @@ For a source file "foo.ll" containing the functions "bar" and "baz" the followin
 ## Installation
 
 ```shell
-go get github.com/mewrev/ll2dot
+go get github.com/decomp/ll2dot
 ```
 
 ## Usage
@@ -40,8 +40,8 @@ Output:
 * [foo.dot](testdata/funcs_graphs/foo.dot)
 * [bar.dot](testdata/funcs_graphs/bar.dot)
 
-![CFG funcs the foo function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/foo.png)
-![CFG funcs the bar function of funcs.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/funcs_graphs/bar.png)
+![CFG funcs the foo function of funcs.ll](https://raw.githubusercontent.com/decomp/ll2dot/master/testdata/funcs_graphs/foo.png)
+![CFG funcs the bar function of funcs.ll](https://raw.githubusercontent.com/decomp/ll2dot/master/testdata/funcs_graphs/bar.png)
 
 ### switch
 
@@ -55,7 +55,7 @@ Input:
 Output:
 * [main.dot](testdata/switch_graphs/main.dot)
 
-![CFG switch the main function of switch.ll](https://raw.githubusercontent.com/mewrev/ll2dot/master/testdata/switch_graphs/main.png)
+![CFG switch the main function of switch.ll](https://raw.githubusercontent.com/decomp/ll2dot/master/testdata/switch_graphs/main.png)
 
 ## Dependencies
 
