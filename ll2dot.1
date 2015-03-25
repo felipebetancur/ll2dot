@@ -1,12 +1,12 @@
 .TH "LL2DOT" 1 "2015-03-04" "Ll2dot" "Ll2dot Manual"
 .SH "NAME"
-ll2dot is a tool which creates control flow graphs of LLVM IR assembly files
+ll2dot is a tool which generates control flow graphs from LLVM IR assembly files
 (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each
 representing the control flow graph of a function using one node per basic
 block.
 
 For a source file "foo.ll" containing the functions "bar" and "baz" the
-following DOT files will be created:
+following DOT files will be generated:
 
    * foo_graphs/bar.dot
    * foo_graphs/baz.dot

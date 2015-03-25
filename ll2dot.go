@@ -3,13 +3,13 @@
 //go:generate mango -plain ll2dot.go
 //go:generate mv z_usage.bak z_usage.go
 
-// ll2dot is a tool which creates control flow graphs of LLVM IR assembly files
-// (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each
+// ll2dot is a tool which generates control flow graphs from LLVM IR assembly
+// files (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each
 // representing the control flow graph of a function using one node per basic
 // block.
 //
 // For a source file "foo.ll" containing the functions "bar" and "baz" the
-// following DOT files will be created:
+// following DOT files will be generated:
 //
 //    * foo_graphs/bar.dot
 //    * foo_graphs/baz.dot
@@ -53,7 +53,7 @@ func init() {
 
 const use = `
 Usage: ll2dot [OPTION]... FILE...
-Create control flow graphs of LLVM IR assembly files (e.g. *.ll -> *.dot).
+Generate control flow graphs from LLVM IR assembly files (e.g. *.ll -> *.dot).
 
 Flags:`
 
@@ -76,7 +76,7 @@ func main() {
 	}
 }
 
-// ll2dot parses the provided LLVM IR assembly file and creates a control flow
+// ll2dot parses the provided LLVM IR assembly file and generates a control flow
 // graph for each of its defined functions using one node per basic block.
 func ll2dot(llPath string) error {
 	// File name and file path without extension.
@@ -142,9 +142,9 @@ func ll2dot(llPath string) error {
 		}
 	}
 
-	// Create a control flow graph for each function.
+	// Generate a control flow graph for each function.
 	for _, funcName := range funcNames {
-		// Create control flow graph.
+		// Generate control flow graph.
 		if !flagQuiet {
 			log.Printf("Parsing function: %q\n", funcName)
 		}
@@ -191,15 +191,15 @@ func ll2dot(llPath string) error {
 	return nil
 }
 
-// createCFG creates a control flow graph for the given function using one node
-// per basic block.
+// createCFG generates a control flow graph for the given function using one
+// node per basic block.
 func createCFG(module llvm.Module, funcName string) (*dot.Graph, error) {
 	f := module.NamedFunction(funcName)
 	if f.IsNil() {
 		return nil, errutil.Newf("unable to locate function %q", funcName)
 	}
 	if f.IsDeclaration() {
-		return nil, errutil.Newf("unable to create CFG for %q; expected function definition, got function declaration (e.g. no body)", funcName)
+		return nil, errutil.Newf("unable to generate CFG for %q; expected function definition, got function declaration (e.g. no body)", funcName)
 	}
 
 	// Create a new directed graph.
