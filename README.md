@@ -1,3 +1,7 @@
+## WIP
+
+This project is a *work in progress*. The implementation is *incomplete* and subject to change. The documentation can be inaccurate.
+
 # ll2dot
 
 [![GoDoc](https://godoc.org/decomp.org/x/cmd/ll2dot?status.svg)](https://godoc.org/decomp.org/x/cmd/ll2dot)
