@@ -1,6 +1,6 @@
 # ll2dot
 
-[![GoDoc](https://godoc.org/decomp.org/x/cmd/ll2dot?status.svg)](https://godoc.org/decomp.org/x/ll2dot)
+[![GoDoc](https://godoc.org/decomp.org/x/cmd/ll2dot?status.svg)](https://godoc.org/decomp.org/x/cmd/ll2dot)
 
 `ll2dot` is a tool which generates control flow graphs from LLVM IR assembly files (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each representing the control flow graph of a function using one node per basic block.
 
