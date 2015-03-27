@@ -15,6 +15,8 @@ For a source file "foo.ll" containing the functions "bar" and "baz" the followin
 
 ## Installation
 
+* Install the [dependencies](https://github.com/decomp/ll2dot#dependencies) before running go-get.
+
 ```shell
 go get decomp.org/x/cmd/ll2dot
 ```
