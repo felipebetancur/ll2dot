@@ -4,7 +4,7 @@
 //go:generate mv z_usage.bak z_usage.go
 
 // ll2dot is a tool which generates control flow graphs from LLVM IR assembly
-// files (e.g. *.ll -> *.dot). The output is a set of GraphViz DOT files, each
+// files (e.g. *.ll -> *.dot). The output is a set of Graphviz DOT files, each
 // representing the control flow graph of a function using one node per basic
 // block.
 //
